@@ -11,7 +11,7 @@ print(__doc__)
 
 # Standard scientific Python imports
 import matplotlib.pyplot as plt
-
+import joblib
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
 from sklearn.model_selection import train_test_split
@@ -19,6 +19,7 @@ from sklearn.model_selection import train_test_split
 from skimage import data, color
 from skimage.transform import rescale
 import numpy as np
+import util
 
 ###############################################################################
 # Digits dataset
@@ -33,7 +34,7 @@ import numpy as np
 #
 # Note: if we were working from image files (e.g., 'png' files), we would load
 # them using :func:`matplotlib.pyplot.imread`.
-
+global digits
 digits = datasets.load_digits()
 
 _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
@@ -62,15 +63,19 @@ n_samples = len(digits.images)
 print("Image size is:")
 print(digits.images[0].shape)
 
+
 rescale_factors = [0.5, 1, 2]
 test_sizes = [0.1, 0.2, 0.3, 0.4]
 gamma_sizes = [0.0001, 0.001, 0.01, 0.1]
+bst_acc = 0
+bst_gamma = 0
+bst_f1 = 0
 for rescale_factor in rescale_factors:
     resized_images = []
     for d in digits.images:
         resized_images.append(rescale(d, rescale_factor, anti_aliasing=False))
     for test_size in test_sizes:
-
+        global data
         resized_images = np.array(resized_images)
         data = resized_images.reshape((n_samples, -1))
 
@@ -78,17 +83,20 @@ for rescale_factor in rescale_factors:
     for gamma_size in gamma_sizes:
 
         clf = svm.SVC(gamma=gamma_size)
-        print("gamma value:", clf)
+        #print("gamma value:", clf)
 
         # Split data into 50% train and 50% test subsets
-        X_train, X_test, y_train, y_test = train_test_split(
-            data, digits.target, test_size=test_size, shuffle=False)
+        # X_train, X_test, y_train, y_test = train_test_split(
+        #     data, digits.target, test_size=test_size, shuffle=False)
+        global X_train, X_test, y_train, y_test
+        X_train, X_test, y_train, y_test=util.train_data(data,digits,test_size)
 
         # Learn the digits on the train subset
         clf.fit(X_train, y_train)
 
         # Predict the value of the digit on the test subset
         predicted = clf.predict(X_test)
+
 
         ###############################################################################
         # Below we visualize the first 4 test samples and show their predicted
@@ -118,8 +126,25 @@ for rescale_factor in rescale_factors:
 
         acc = metrics.accuracy_score(y_pred=predicted, y_true=y_test)
         f1 = metrics.f1_score(y_pred=predicted, y_true=y_test, average='macro')
-        print(
-            "{}x{}\t{}\t{}:{}\t{}\t{}".format(resized_images[0].shape[0], resized_images[0].shape[1], clf, (1 - test_size) * 100,
-                                          test_size * 100, acc, f1))
+        if acc > bst_acc:
+            bst_gamma = gamma_size
+            bst_acc = acc
+            bst_f1 = f1
+
+        # print(
+        #     "{}x{}\t{}\t{}:{}\t{}\t{}".format(resized_images[0].shape[0], resized_images[0].shape[1], clf, (1 - test_size) * 100,
+        #                                   test_size * 100, acc, f1))
+
+print("Best Gamma", bst_gamma)
+print("Best accuracy", bst_acc)
+# predicted.save_weights("model_digit.h5")
+# print("Saved model to disk")
+# save
+joblib.dump(clf, "model.pkl")
+
+# load
+clf2 = joblib.load("model.pkl")
+
+clf2.predict(X_test[0:1])
 
         # plt.show()
