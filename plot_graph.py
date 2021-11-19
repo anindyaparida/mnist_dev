@@ -22,6 +22,7 @@ from skimage.transform import rescale
 import numpy as np
 
 from joblib import dump, load
+from utils import test
 
 ###############################################################################
 # Digits dataset
@@ -139,7 +140,7 @@ for test_size, valid_size in [(0.15, 0.15)]:
         best_model_folder = "./models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
             test_size, valid_size, rescale_factor, max_valid_f1_model_candidate['gamma']
         )
-        #clf = load(os.path.join(best_model_folder, "model.joblib"))
+        clf = load(os.path.join(best_model_folder, "model.joblib"))
         predicted = clf.predict(X_test)
         predicted1 = clf1.predict(X_test)
 
@@ -147,6 +148,7 @@ for test_size, valid_size in [(0.15, 0.15)]:
         f1 = metrics.f1_score(y_pred=predicted, y_true=y_test, average="macro")
         acc1 = metrics.accuracy_score(y_pred=predicted1, y_true=y_test)
         f11 = metrics.f1_score(y_pred=predicted1, y_true=y_test, average="macro")
+        # acc,f1,acc1,f11=test(clf,clf1,X_test,y_test)
         print(
             "{:15s}\t{}x{}\t{}\t{}:{}\t{:.3f}\t{:.3f}".format('SVM',
                 resized_images[0].shape[0],
